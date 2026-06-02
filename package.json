@@ -1,0 +1,11 @@
+{
+  "name": "glyph-s",
+  "version": "2.3.0",
+  "description": "Glyph Search 2.3-O/On — universal offline-first search",
+  "type": "module",
+  "scripts": {
+    "bundle:floke": "node scripts/bundle-floke.mjs",
+    "bundle:obsidian": "node scripts/bundle-cjs.mjs"
+  },
+  "license": "GPL-3.0-or-later"
+}
