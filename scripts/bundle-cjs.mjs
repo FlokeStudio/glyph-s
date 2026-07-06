@@ -15,6 +15,7 @@ function toCjs(src, exportNames) {
 }
 
 const tokenize = await fs.readFile(path.join(lib, 'tokenize.js'), 'utf8');
+const layout = await fs.readFile(path.join(lib, 'layout.js'), 'utf8');
 const ollama = await fs.readFile(path.join(lib, 'ollama.js'), 'utf8');
 const engineRaw = await fs.readFile(path.join(lib, 'engine.js'), 'utf8');
 
@@ -27,13 +28,26 @@ const ollamaCjs = toCjs(ollama, [
   'ollamaGenerate',
   'ollamaJson',
 ]);
+const layoutCjs = toCjs(layout, [
+  'EN2RU',
+  'RU2EN',
+  'swapKeyboardEnToRu',
+  'swapKeyboardRuToEn',
+  'latinToCyrillicRough',
+  'cyrillicToLatinRough',
+  'expandTokenVariants',
+  'expandQueryVariants',
+]);
 
 const engineCjs =
   tokenizeCjs.replace(/module\.exports[\s\S]*$/, '') +
+  layoutCjs.replace(/module\.exports[\s\S]*$/, '') +
   engineRaw
     .replace(/import \{[^}]+\} from '\.\/tokenize\.js';?\n?/, '')
+    .replace(/import \{[^}]+\} from '\.\/layout\.js';?\n?/, '')
+    .replace(/^export \{[^}]+\};?\s*$/gm, '')
     .replace(/^export /gm, '') +
-  '\nmodule.exports = {\n  tokenizeQuery,\n  parseSearchQuery,\n  matchesSearchFilters,\n  scoreSearchItem,\n  snippetForItem,\n  rankSearchItems,\n};\n';
+  '\nmodule.exports = {\n  tokenizeQuery,\n  parseSearchQuery,\n  expandTokenVariants,\n  expandQueryVariants,\n  matchesSearchFilters,\n  scoreSearchItem,\n  snippetForItem,\n  rankSearchItems,\n  buildIndex,\n  createSearchEngine\n};\n';
 
 const targets = [
   path.resolve(root, '../glyph-miO/vendor'),
@@ -42,6 +56,8 @@ const targets = [
 for (const dir of targets) {
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(path.join(dir, 'ollama.cjs'), ollamaCjs, 'utf8');
+  await fs.writeFile(path.join(dir, 'ollama.js'), ollamaCjs, 'utf8');
   await fs.writeFile(path.join(dir, 'engine.cjs'), engineCjs, 'utf8');
+  await fs.writeFile(path.join(dir, 'engine.js'), engineCjs, 'utf8');
   console.log('Wrote vendor →', dir);
 }

@@ -1,11 +1,12 @@
 {
   "name": "glyph-s",
-  "version": "2.3.0",
-  "description": "Glyph Search 2.3-O/On — universal offline-first search",
+  "version": "2.7.0",
+  "description": "Glyph Search 2.7 — universal offline-first search engine",
   "type": "module",
   "scripts": {
     "bundle:floke": "node scripts/bundle-floke.mjs",
-    "bundle:obsidian": "node scripts/bundle-cjs.mjs"
+    "bundle:obsidian": "node scripts/bundle-cjs.mjs",
+    "build": "npm run bundle:obsidian && npm run bundle:floke"
   },
   "license": "GPL-3.0-or-later"
 }

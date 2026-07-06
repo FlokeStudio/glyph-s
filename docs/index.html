@@ -3,28 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>glyph-s | Floke Glyph Engine</title>
+  <title>glyph-s 2.7</title>
   <style>
     :root { color-scheme: dark; }
-    body { margin: 0; font-family: Inter, Segoe UI, Arial, sans-serif; background: #0a0b0f; color: #edf0ff; }
-    .wrap { max-width: 900px; margin: 0 auto; padding: 48px 20px; }
-    .card { border: 1px solid #20263b; border-radius: 18px; padding: 28px; background: #121624; }
-    h1 { margin: 0 0 8px; font-size: 34px; }
-    p { color: #c0c7de; line-height: 1.55; }
+    body { margin: 0; font-family: Inter, Segoe UI, Arial, sans-serif; background: #090b12; color: #edf0ff; }
+    .wrap { max-width: 940px; margin: 0 auto; padding: 56px 20px; }
+    .card { border: 1px solid #202945; border-radius: 20px; padding: 34px; background: #10172a; }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .brand img { width: 48px; height: 48px; }
+    h1 { margin: 0 0 8px; font-size: 35px; }
+    p { color: #bfcbe6; line-height: 1.58; margin: 0 0 10px; }
+    .caps { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0 4px; }
+    .cap { border: 1px solid #2e3d63; border-radius: 999px; padding: 6px 10px; font-size: 12px; color: #d5dfff; }
     .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-    a { color: #cdd7ff; text-decoration: none; border: 1px solid #2f3956; padding: 10px 14px; border-radius: 10px; }
+    a { color: #d7e2ff; text-decoration: none; border: 1px solid #314164; padding: 10px 14px; border-radius: 10px; }
   </style>
 </head>
 <body>
   <main class="wrap">
     <section class="card">
-      <h1>glyph-s 2.3-O / 2.3-On</h1>
-      <p>Shared offline-first search engine for Floke products with ranking, query parsing, and optional local Ollama enrichment.</p>
+      <div class="brand">
+        <img src="./assets/glyph-transparent.png" alt="Glyph logo">
+        <strong>Glyph Core Engine</strong>
+      </div>
+      <h1>glyph-s 2.7</h1>
+      <p>Universal offline-first search core with staged ranking, profile-based performance tuning, compatibility APIs, and diagnostics hooks.</p>
+      <div class="caps">
+        <span class="cap">createSearchEngine + buildIndex</span>
+        <span class="cap">legacy / balanced / max-quality</span>
+        <span class="cap">CJS + ESM outputs</span>
+      </div>
       <div class="links">
         <a href="https://github.com/FlokeStudio/glyph-s">Repository</a>
         <a href="https://github.com/FlokeStudio/glyph-sO">glyph-sO</a>
         <a href="https://github.com/FlokeStudio/glyph-miO">glyph-miO</a>
-        <a href="https://github.com/FlokeStudio/Floke">Floke Studio</a>
       </div>
     </section>
   </main>
