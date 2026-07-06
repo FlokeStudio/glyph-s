@@ -3,42 +3,260 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>glyph-s 2.7</title>
+  <title>glyph-s 2.7 — Glyph Core Search Engine</title>
+  <meta name="description" content="Universal offline-first search engine for the Glyph family. Profile-based ranking, extended query grammar, CJS and ESM bundles.">
   <style>
-    :root { color-scheme: dark; }
-    body { margin: 0; font-family: Inter, Segoe UI, Arial, sans-serif; background: #090b12; color: #edf0ff; }
-    .wrap { max-width: 940px; margin: 0 auto; padding: 56px 20px; }
-    .card { border: 1px solid #202945; border-radius: 20px; padding: 34px; background: #10172a; }
-    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-    .brand img { width: 48px; height: 48px; }
-    h1 { margin: 0 0 8px; font-size: 35px; }
-    p { color: #bfcbe6; line-height: 1.58; margin: 0 0 10px; }
-    .caps { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0 4px; }
-    .cap { border: 1px solid #2e3d63; border-radius: 999px; padding: 6px 10px; font-size: 12px; color: #d5dfff; }
-    .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-    a { color: #d7e2ff; text-decoration: none; border: 1px solid #314164; padding: 10px 14px; border-radius: 10px; }
+    :root {
+      color-scheme: dark;
+      --bg: #0c0e11;
+      --bg-elevated: #13161c;
+      --bg-card: #171b22;
+      --border: #2a3038;
+      --text: #eceff4;
+      --muted: #8b95a5;
+      --accent: #3dd6c6;
+      --accent-dim: rgba(61, 214, 198, 0.1);
+      --warm: #e8b86d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .nav {
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 1100px; margin: 0 auto; padding: 20px 28px;
+    }
+    .nav-links { display: flex; gap: 22px; font-size: 14px; }
+    .nav-links a { color: var(--muted); }
+    .hero {
+      text-align: center; padding: 80px 28px 64px;
+      background: radial-gradient(ellipse 70% 55% at 50% 0%, rgba(61,214,198,0.07), transparent 70%);
+    }
+    .hero-logo {
+      display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 36px;
+    }
+    .hero-logo img { width: 80px; height: 80px; }
+    .hero-logo .name {
+      font-size: clamp(2rem, 4.5vw, 2.8rem); font-weight: 700; letter-spacing: -0.03em; margin: 0;
+    }
+    .hero-logo .tagline {
+      font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0;
+    }
+    .hero h1 { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 600; margin: 0 0 20px; color: var(--muted); max-width: 720px; margin-left: auto; margin-right: auto; }
+    .hero .lead { max-width: 600px; margin: 0 auto 36px; font-size: 1.1rem; color: var(--muted); }
+    .cta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+    .btn {
+      display: inline-block; padding: 13px 24px; border-radius: 10px; font-weight: 600; font-size: 15px;
+      border: 1px solid var(--border);
+    }
+    .btn-primary { background: var(--accent); color: #0c0e11; border-color: var(--accent); }
+    .btn-primary:hover { background: #4ee8d8; text-decoration: none; }
+    .btn-secondary { background: var(--bg-card); color: var(--text); }
+    .btn-secondary:hover { background: var(--bg-elevated); text-decoration: none; }
+    .pill-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 28px; }
+    .pill {
+      font-size: 13px; padding: 6px 14px; border-radius: 999px;
+      border: 1px solid var(--border); color: var(--muted); background: var(--bg-card);
+    }
+    .section { max-width: 1100px; margin: 0 auto; padding: 64px 28px; }
+    .section h2 { font-size: 1.85rem; margin: 0 0 14px; letter-spacing: -0.02em; }
+    .section .sub { color: var(--muted); margin: 0 0 36px; max-width: 700px; font-size: 1.05rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 30px;
+    }
+    .card h3 { margin: 0 0 10px; font-size: 1.12rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.96rem; }
+    .card .metric { font-size: 2rem; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+    .split {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start;
+    }
+    @media (max-width: 768px) { .split { grid-template-columns: 1fr; } }
+    .code-block {
+      background: #0a0c0f; border: 1px solid var(--border); border-radius: 14px;
+      padding: 24px; overflow-x: auto; font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 13px; line-height: 1.55; color: #b8c5d6;
+    }
+    .code-block .kw { color: var(--accent); }
+    .code-block .str { color: var(--warm); }
+    .highlight {
+      background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 18px;
+      padding: 36px; margin-top: 28px;
+    }
+    .highlight h3 { margin: 0 0 18px; color: var(--warm); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; }
+    td code { font-size: 12px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
+    .family {
+      text-align: center; padding: 56px 28px 80px;
+      background: var(--bg-elevated); border-top: 1px solid var(--border);
+    }
+    .family h2 { margin-bottom: 12px; }
+    .family p { color: var(--muted); margin-bottom: 24px; }
+    .family-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+    .family-links a {
+      color: var(--text); border: 1px solid var(--border); padding: 10px 20px; border-radius: 10px;
+      background: var(--bg-card); font-size: 14px;
+    }
+    .family-links a:hover { border-color: var(--accent); text-decoration: none; }
+    footer { text-align: center; padding: 28px; color: var(--muted); font-size: 13px; }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="card">
-      <div class="brand">
-        <img src="./assets/glyph-transparent.png" alt="Glyph logo">
-        <strong>Glyph Core Engine</strong>
+  <nav class="nav">
+    <strong>Glyph</strong>
+    <div class="nav-links">
+      <a href="https://github.com/FlokeStudio/glyph-s">GitHub</a>
+      <a href="https://github.com/FlokeStudio/glyph-s#user-section">Docs</a>
+      <a href="https://github.com/FlokeStudio/glyph-sO">glyph-sO</a>
+      <a href="https://krwg.github.io/glyph-mi/">glyph-mi</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-logo">
+      <img src="./assets/glyph-transparent.png" alt="Glyph">
+      <p class="tagline">Glyph Core Engine</p>
+      <p class="name">glyph-s</p>
+    </div>
+    <h1>Universal search for the Glyph family</h1>
+    <p class="lead">Offline-first full-text ranking with profile tuning, extended query grammar, and a clean API — powering Obsidian plugins, web apps, and future Glyph products.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/FlokeStudio/glyph-s">View on GitHub</a>
+      <a class="btn btn-secondary" href="https://github.com/FlokeStudio/glyph-s/blob/main/README.md">API reference</a>
+    </div>
+    <div class="pill-row">
+      <span class="pill">v2.7.0</span>
+      <span class="pill">createSearchEngine</span>
+      <span class="pill">CJS + ESM</span>
+      <span class="pill">offline-first</span>
+    </div>
+  </header>
+
+  <section class="section">
+    <h2>What’s new in 2.7</h2>
+    <p class="sub">A staged refactor that keeps backward compatibility while adding performance profiles, richer queries, and a modern engine API.</p>
+    <div class="grid">
+      <article class="card">
+        <h3>Profile-based ranking</h3>
+        <p>Three built-in profiles tune fuzzy cutoff, score scaling, and candidate limits. Switch at runtime without rebuilding the index.</p>
+      </article>
+      <article class="card">
+        <h3>createSearchEngine()</h3>
+        <p>High-level API: pass items once, get a reusable engine with <code>.search(query)</code>. Includes <code>buildIndex()</code> for pre-computed text bags.</p>
+      </article>
+      <article class="card">
+        <h3>Extended query grammar</h3>
+        <p>Quoted phrases, negation (<code>-term</code>), OR groups (<code>(a OR b)</code>), and structured filters: <code>path:</code>, <code>tag:</code>, <code>type:</code>, <code>page:</code>, <code>app:</code>.</p>
+      </article>
+      <article class="card">
+        <h3>Performance caches</h3>
+        <p>Token-variant expansion and snippet generation are memoized per profile. Diagnostics hook reports candidate counts and elapsed time.</p>
+      </article>
+    </div>
+    <div class="highlight">
+      <h3>Search profiles</h3>
+      <table>
+        <thead><tr><th>Profile</th><th>Fuzzy cutoff</th><th>Score scale</th><th>Max candidates</th><th>Use case</th></tr></thead>
+        <tbody>
+          <tr><td><code>legacy</code></td><td>0.40</td><td>1.00</td><td>8 000</td><td>Pre-2.7 compatibility</td></tr>
+          <tr><td><code>balanced</code></td><td>0.48</td><td>1.08</td><td>4 000</td><td>Daily use (default)</td></tr>
+          <tr><td><code>max-quality</code></td><td>0.35</td><td>1.16</td><td>9 000</td><td>Maximum recall</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Query language</h2>
+    <p class="sub">Compose precise searches with filters, phrases, and boolean groups.</p>
+    <div class="split">
+      <div>
+        <div class="code-block">
+<span class="kw">"deep work"</span> <span class="kw">-draft</span><br>
+<span class="kw">path:</span><span class="str">projects/</span><br>
+<span class="kw">tag:</span><span class="str">evergreen</span><br>
+(<span class="str">idea</span> <span class="kw">OR</span> <span class="str">draft</span>) <span class="kw">type:</span><span class="str">note</span>
+        </div>
       </div>
-      <h1>glyph-s 2.7</h1>
-      <p>Universal offline-first search core with staged ranking, profile-based performance tuning, compatibility APIs, and diagnostics hooks.</p>
-      <div class="caps">
-        <span class="cap">createSearchEngine + buildIndex</span>
-        <span class="cap">legacy / balanced / max-quality</span>
-        <span class="cap">CJS + ESM outputs</span>
+      <div>
+        <article class="card" style="margin-bottom:16px">
+          <h3>Phrases</h3>
+          <p>Double-quoted strings match as contiguous text: <code>"meeting notes"</code></p>
+        </article>
+        <article class="card" style="margin-bottom:16px">
+          <h3>Exclusions</h3>
+          <p>Prefix with <code>-</code> to filter out: <code>-archive</code></p>
+        </article>
+        <article class="card">
+          <h3>OR groups</h3>
+          <p>Parentheses with <code>OR</code>: <code>(task OR todo)</code></p>
+        </article>
       </div>
-      <div class="links">
-        <a href="https://github.com/FlokeStudio/glyph-s">Repository</a>
-        <a href="https://github.com/FlokeStudio/glyph-sO">glyph-sO</a>
-        <a href="https://github.com/FlokeStudio/glyph-miO">glyph-miO</a>
-      </div>
-    </section>
-  </main>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>API quick start</h2>
+    <p class="sub">ESM import for modern apps; CJS bundle for Obsidian plugins and Node.</p>
+    <div class="code-block">
+<span class="kw">import</span> { createSearchEngine } <span class="kw">from</span> <span class="str">'./lib/index.js'</span>;
+
+<span class="kw">const</span> engine = createSearchEngine({
+  profile: <span class="str">'balanced'</span>,
+  items: [{
+    cat: <span class="str">'note'</span>,
+    title: () => <span class="str">'Project Alpha'</span>,
+    sub: <span class="str">'docs/alpha.md'</span>,
+    keys: [<span class="str">'alpha'</span>, <span class="str">'project'</span>],
+    body: () => <span class="str">'Alpha project planning and milestones'</span>,
+  }],
+});
+
+<span class="kw">const</span> results = engine.search(<span class="str">'alpha planning'</span>);
+<span class="kw">//</span> [{ item, score, snippet, ... }]
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Where glyph-s runs</h2>
+    <p class="sub">One engine, multiple delivery formats.</p>
+    <div class="grid">
+      <article class="card">
+        <div class="metric">Obsidian</div>
+        <h3>glyph-sO plugin</h3>
+        <p>CJS bundle in <code>vendor/engine.js</code>. Full vault indexing with keyboard navigation and snippet previews.</p>
+      </article>
+      <article class="card">
+        <div class="metric">Web</div>
+        <h3>Floke site bundle</h3>
+        <p><code>glyph-search-2.7.js</code> exposes <code>globalThis.GlyphS</code> for browser-side search in Floke products.</p>
+      </article>
+      <article class="card">
+        <div class="metric">ESM</div>
+        <h3>Direct import</h3>
+        <p><code>lib/index.js</code> exports the full API for Node, bundlers, and custom integrations.</p>
+      </article>
+    </div>
+  </section>
+
+  <div class="family">
+    <h2>Glyph 2.7 family</h2>
+    <p>Search and metadata intelligence, built to work together.</p>
+    <div class="family-links">
+      <a href="https://flokestudio.github.io/glyph-sO/">glyph-sO · Obsidian search</a>
+      <a href="https://flokestudio.github.io/glyph-miO/">glyph-miO · Obsidian MI</a>
+      <a href="https://krwg.github.io/glyph-mi/">glyph-mi · MI core</a>
+    </div>
+  </div>
+
+  <footer>GPL-3.0-or-later · Floke Studio · glyph-s 2.7</footer>
 </body>
 </html>
