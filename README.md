@@ -2,7 +2,7 @@
 
 **Universal offline-first search** for Floke products — ranking engine, optional Ollama enrichment, IndexedDB corpus helpers.
 
-[Mini landing](docs/index.html) · [glyph-sO](https://github.com/FlokeStudio/glyph-sO) · [glyph-miO](https://github.com/FlokeStudio/glyph-miO)
+[Site](https://flokestudio.github.io/glyph-s/) · [glyph-sO](https://github.com/FlokeStudio/glyph-sO) · [glyph-miO](https://github.com/FlokeStudio/glyph-miO)
 
 <p>
   <img src="https://img.shields.io/badge/version-2.3.0-blue" alt="version" />
