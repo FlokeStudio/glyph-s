@@ -1,8 +1,8 @@
-# glyph-s 2.3-O / 2.3-On
+# glyph-s Repository Note
 
-Ядро поиска Floke: офлайн-ранжирование (**O**) и опционально Ollama (**On**).
+`glyph-s` is the shared search engine for the Glyph family and Floke web assets.
 
-- Лендинг: `npm run bundle:floke` → `Floke/docs/assets/glyph-search-2.3.js`
-- Obsidian: `npm run bundle:obsidian` → vendor в glyph-miO / glyph-so
-
-[../GLYPH.md](../GLYPH.md)
+- Main docs: `README.md`
+- Mini landing: `docs/index.html`
+- Build for Floke: `npm run bundle:floke`
+- Build for Obsidian plugins: `npm run bundle:obsidian`
