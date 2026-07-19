@@ -2,7 +2,7 @@
   <img src="docs/assets/glyph-transparent.png" width="88" alt="Glyph" />
 </p>
 
-<h1 align="center">glyph-s 2.7.1</h1>
+<h1 align="center">glyph-s 2.7.2</h1>
 
 <p align="center">
   <strong>Glyph Core Search Engine</strong><br>
@@ -34,6 +34,12 @@ If you use [**glyph-sO**](https://github.com/FlokeStudio/glyph-sO) in Obsidian, 
 | **Floke / web developers** | Pre-built browser bundle (`glyph-search-2.7.js`) |
 | **Plugin / app developers** | ESM or CJS import with full API control |
 
+### What’s new in 2.7.2
+
+**Full-text fast-path fix** — candidate gating (`textBagForItem` / `shouldCandidatePassFastPath`) now includes note **body**, so terms that appear only in paragraphs reach scoring. Previously the bag was title + sub + keys only, which silently dropped body-only hits before `scoreSearchItem`.
+
+**Index reuse** — `createSearchEngine().search()` passes the precomputed `buildIndex()` bags into `rankSearchItems` instead of rebuilding them every query.
+
 ### What’s new in 2.7 / 2.7.1
 
 **Search profiles** — three presets that tune the speed vs. quality tradeoff (defined in `lib/profiles.json` / `lib/profiles.js`):
@@ -60,9 +66,9 @@ type:note page:docs      → structured filters
 - `createSearchEngine(options)` — reusable search instance with `.search(query)`
 - `buildIndex(items, opts)` — pre-compute text bags for faster repeated queries
 
-**2.7.1 tooling:**
+**2.7.1–2.7.2 tooling:**
 
-- Vitest ranking snapshots (`npm test`)
+- Vitest ranking snapshots (`npm test`), including a body-only full-text regression
 - Automated vendor sync (`npm run vendor:sync`) with `VERSION.json` stamp
 - JSDoc public API typedefs (`lib/types.js`) + optional `checkJs` via `jsconfig.json`
 

@@ -43,6 +43,6 @@ rankSearchItems(items, query, {
 
 Wire the callback into the Obsidian debug / status UI to surface candidate vs scored counts and latency.
 
-## Roadmap (not in 2.7.1)
+## Roadmap (not in 2.7.2)
 
 - **Incremental index** — update bags for changed items without full `buildIndex` rebuild. Callers should keep using full rebuild until that lands.

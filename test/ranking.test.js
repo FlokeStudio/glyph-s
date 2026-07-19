@@ -88,6 +88,22 @@ describe('scoreSearchItem', () => {
     const score = scoreSearchItem(note, ['deep', 'work'], filters, { profile: 'legacy' });
     expect(score).toBeGreaterThan(0);
   });
+
+  it('ranks body-only terms through fast-path (full-text)', () => {
+    const buried = item('buried-body', {
+      title: 'Unrelated title',
+      sub: 'meta/path',
+      keys: ['unrelated', 'meta/path'],
+      body: 'Only this paragraph mentions phosphor crystals.',
+    });
+    const decoy = item('decoy-title', {
+      title: 'Phosphor in title',
+      body: 'Nothing buried here.',
+    });
+    const ranked = rankSearchItems([decoy, buried], 'phosphor crystals', { limit: 5, profile: 'legacy' });
+    const hashes = ranked.map((r) => r.it.hash);
+    expect(hashes).toContain('#buried-body');
+  });
 });
 
 describe('fuzzy layout', () => {
