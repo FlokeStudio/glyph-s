@@ -1,0 +1,137 @@
+import { describe, expect, it } from 'vitest';
+import {
+  rankSearchItems,
+  scoreSearchItem,
+  parseSearchQuery,
+  expandTokenVariants,
+  getProfileConfig,
+  PROFILE_SETTINGS,
+} from '../lib/index.js';
+import { CORPUS, rankedIds, item } from './helpers.js';
+
+describe('profiles', () => {
+  it('exposes legacy / balanced / max-quality', () => {
+    expect(Object.keys(PROFILE_SETTINGS).sort()).toEqual(['balanced', 'legacy', 'max-quality'].sort());
+    expect(getProfileConfig('balanced').maxCandidates).toBe(4000);
+    expect(getProfileConfig('unknown').fuzzyCutoff).toBe(PROFILE_SETTINGS.legacy.fuzzyCutoff);
+  });
+});
+
+describe('rankSearchItems order snapshots', () => {
+  it('ranks exact title/token hits above noise for "alpha"', () => {
+    const hits = rankSearchItems(CORPUS, 'alpha', { profile: 'legacy', limit: 10 });
+    expect(rankedIds(hits)).toMatchInlineSnapshot(`
+      [
+        "alpha-note",
+        "alpha-app",
+      ]
+    `);
+  });
+
+  it('ranks multi-token query with stable order for "alpha project"', () => {
+    const hits = rankSearchItems(CORPUS, 'alpha project', { profile: 'balanced', limit: 10 });
+    expect(rankedIds(hits)).toMatchInlineSnapshot(`
+      [
+        "alpha-note",
+      ]
+    `);
+  });
+
+  it('respects exclusion filter -draft', () => {
+    const hits = rankSearchItems(CORPUS, 'draft -scratch', { profile: 'legacy', limit: 10 });
+    expect(rankedIds(hits)).toEqual([]);
+  });
+
+  it('filters with tag:evergreen', () => {
+    const hits = rankSearchItems(CORPUS, 'tag:evergreen', { profile: 'legacy', limit: 10 });
+    expect(rankedIds(hits)).toMatchInlineSnapshot(`
+      [
+        "evergreen",
+      ]
+    `);
+  });
+
+  it('max-quality keeps alpha-note first for "alpha"', () => {
+    const hits = rankSearchItems(CORPUS, 'alpha', { profile: 'max-quality', limit: 5 });
+    expect(rankedIds(hits)[0]).toBe('alpha-note');
+    expect(rankedIds(hits)).toContain('alpha-app');
+  });
+
+  it('empty query prefers higher category priority (page first)', () => {
+    const hits = rankSearchItems(CORPUS, '', { profile: 'legacy', limit: 3 });
+    expect(rankedIds(hits)[0]).toBe('beta-page');
+    expect(hits.every((h) => h.score > 0)).toBe(true);
+    expect(hits[0].score).toBeGreaterThanOrEqual(hits[1].score);
+  });
+});
+
+describe('scoreSearchItem', () => {
+  it('scores empty query by category priority', () => {
+    const page = item('p', { title: 'P', cat: 'page' });
+    const news = item('n', { title: 'N', cat: 'news' });
+    const filters = parseSearchQuery('');
+    const pageScore = scoreSearchItem(page, [], filters, { profile: 'legacy' });
+    const newsScore = scoreSearchItem(news, [], filters, { profile: 'legacy' });
+    expect(pageScore).toBeGreaterThan(newsScore);
+  });
+
+  it('gives title exact match a high score', () => {
+    const it = item('t', { title: 'alpha', body: 'other' });
+    const filters = parseSearchQuery('alpha');
+    const score = scoreSearchItem(it, ['alpha'], filters, { profile: 'legacy' });
+    expect(score).toBeGreaterThanOrEqual(125);
+  });
+
+  it('scores body phrase hits for deep work', () => {
+    const note = CORPUS.find((x) => x.hash === '#alpha-note');
+    const filters = parseSearchQuery('deep work');
+    const score = scoreSearchItem(note, ['deep', 'work'], filters, { profile: 'legacy' });
+    expect(score).toBeGreaterThan(0);
+  });
+});
+
+describe('fuzzy layout', () => {
+  it('expands EN keyboard mistype toward RU', () => {
+    const variants = expandTokenVariants('ghbdtn', { fuzzyLayout: true, fuzzyTransliteration: false });
+    expect(variants).toContain('привет');
+  });
+
+  it('scoreSearchItem matches Cyrillic title via layout variant', () => {
+    const note = CORPUS.find((x) => x.hash === '#privet-note');
+    const filters = parseSearchQuery('ghbdtn');
+    const withFuzzy = scoreSearchItem(note, ['ghbdtn'], filters, {
+      profile: 'legacy',
+      fuzzyLayout: true,
+      fuzzyTransliteration: false,
+    });
+    const without = scoreSearchItem(note, ['ghbdtn'], filters, {
+      profile: 'legacy',
+      fuzzyLayout: false,
+      fuzzyTransliteration: false,
+    });
+    expect(withFuzzy).toBeGreaterThan(0);
+    expect(without).toBe(0);
+  });
+
+  it('ranks when layout variant appears in keys (fast-path bag)', () => {
+    const corpus = [
+      item('ru-keyed', {
+        title: 'Привет мир',
+        keys: ['ghbdtn', 'привет'],
+        body: 'Текст',
+        cat: 'note',
+      }),
+      item('noise', { title: 'Soup', keys: ['soup'], body: 'tomato', cat: 'note' }),
+    ];
+    const hits = rankSearchItems(corpus, 'ghbdtn', {
+      profile: 'legacy',
+      limit: 5,
+      settings: { fuzzyLayout: true, fuzzyTransliteration: false },
+    });
+    expect(rankedIds(hits)).toMatchInlineSnapshot(`
+      [
+        "ru-keyed",
+      ]
+    `);
+  });
+});

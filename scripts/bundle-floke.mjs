@@ -5,25 +5,33 @@ import { fileURLToPath } from 'url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lib = path.join(root, 'lib');
+const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
 
 function stripExports(src) {
-  return src.replace(/^export /gm, '');
+  return src
+    .replace(/^export \{[^}]+\} from '[^']+';?\s*$/gm, '')
+    .replace(/^export \{[^}]+\};?\s*$/gm, '')
+    .replace(/^export /gm, '');
 }
 
 const tokenize = await fs.readFile(path.join(lib, 'tokenize.js'), 'utf8');
 const layout = await fs.readFile(path.join(lib, 'layout.js'), 'utf8');
+const profiles = await fs.readFile(path.join(lib, 'profiles.js'), 'utf8');
 const engine = await fs.readFile(path.join(lib, 'engine.js'), 'utf8');
 
 const stripped = [
   stripExports(tokenize),
   stripExports(layout),
-  engine
-    .replace(/import \{[^}]+\} from '\.\/tokenize\.js';?\n?/, '')
-    .replace(/import \{[^}]+\} from '\.\/layout\.js';?\n?/, '')
-    .replace(/^export /gm, ''),
+  stripExports(profiles),
+  stripExports(
+    engine
+      .replace(/import \{[^}]+\} from '\.\/tokenize\.js';?\n?/g, '')
+      .replace(/import \{[^}]+\} from '\.\/layout\.js';?\n?/g, '')
+      .replace(/import \{[^}]+\} from '\.\/profiles\.js';?\n?/g, '')
+  ),
 ].join('\n');
 
-const out = `/* Glyph Search 2.3-O — layout + translit (glyph-sO model) */
+const out = `/* Glyph Search ${pkg.version} — layout + translit (glyph-s) */
 (function () {
 ${stripped}
   globalThis.GlyphS = {
@@ -31,6 +39,9 @@ ${stripped}
     tokenizeQuery,
     expandTokenVariants,
     expandQueryVariants,
+    getProfileConfig,
+    PROFILE_SETTINGS,
+    PROFILE_IDS,
     matchesSearchFilters,
     scoreSearchItem,
     snippetForItem,
