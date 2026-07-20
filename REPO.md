@@ -12,5 +12,5 @@
 - Vendor sync: `npm run vendor:sync` → writes `../glyph-sO/vendor` and `../glyph-miO/vendor` plus `VERSION.json` (no manual `cp`)
 - Build for Floke: `npm run bundle:floke`
 - Build for Obsidian plugins: `npm run bundle:obsidian` (same as `vendor:sync`)
-- Roadmap: incremental index updates (partial rebuild on item change) — not shipped yet; use full `buildIndex` today
+- Incremental index updates (partial rebuild on item change) — not shipped yet; use full `buildIndex` today
 - Diagnostics: pass `onDiagnostics` to `rankSearchItems` / `createSearchEngine` for glyph-sO debug panel stats

@@ -43,10 +43,8 @@ rankSearchItems(items, query, {
 
 Wire the callback into the Obsidian debug / status UI to surface candidate vs scored counts and latency.
 
-## Roadmap (not in 2.7.2)
-
-See **[ROADMAP.md](../ROADMAP.md)** for the full technical audit and week-by-week priorities.
+## Future engine work
 
 - **Incremental index** — update bags for changed items without full `buildIndex` rebuild. Callers should keep using full rebuild until that lands.
-- **TypeScript + benchmark** — month 2 engine hygiene
+- **TypeScript migration** — `.d.ts` shipped in 2.8; optional `.ts` core modules later
 - **Obsidian sO** — persistent index shipped in **2.7.3** (`services/vault-index.js`)

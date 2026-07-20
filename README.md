@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://flokestudio.github.io/glyph-s/">Site</a> ·
-  <a href="ROADMAP.md">Roadmap</a> ·
+  <a href="docs/DEVELOPMENT.md">Development</a> ·
   <a href="https://github.com/FlokeStudio/glyph-sO">glyph-sO</a> ·
   <a href="https://github.com/FlokeStudio/glyph-miO">glyph-miO</a> ·
   <a href="https://github.com/krwg/glyph-mi">glyph-mi</a>
@@ -44,9 +44,10 @@ If you use [**glyph-sO**](https://github.com/FlokeStudio/glyph-sO) in Obsidian, 
 - Expanded test matrix: query AST, fuzzy EN↔RU layout, engine helpers
 - Benchmark script (`npm run benchmark`) — see numbers below
 
-**Embeddings stub**
+**Embeddings hook**
 
-- `lib/embeddings.js` — optional semantic search hook (`embedTexts` returns `null` when disabled; `embeddingBoost()` returns `0`)
+- `lib/embeddings.js` — optional semantic boost (`semanticEmbeddings: true` uses hash vectors; ONNX when `onnxruntime-node` + model path are configured)
+- Public types in `lib/glyph-s.d.ts`
 
 **Benchmark (2.8.0)**
 
@@ -133,9 +134,9 @@ Enabled by default via `SEARCH_SETTINGS`:
 
 Both can be disabled per-query via `settings` in `rankSearchItems()`.
 
-### Roadmap note
+### Index updates
 
-**Incremental index updates** (patch bags when a single item changes) are planned and not shipped yet. Use full `buildIndex(items)` / recreate the engine when the corpus changes.
+**Incremental index updates** (patch bags when a single item changes) are not shipped yet. Use full `buildIndex(items)` / recreate the engine when the corpus changes.
 
 ---
 
@@ -246,7 +247,7 @@ scripts/
   bundle-floke.mjs
   benchmark.mjs   # 1k / 5k / 10k timing
 docs/
-  DEVELOPMENT.md  # tests, vendor sync, diagnostics, roadmap
+  DEVELOPMENT.md  # tests, vendor sync, diagnostics
   index.html
 ```
 
