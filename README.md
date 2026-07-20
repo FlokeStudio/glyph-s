@@ -75,7 +75,7 @@ npm run benchmark
 
 ### What’s new in 2.7 / 2.7.1
 
-**Search profiles** — three presets that tune the speed vs. quality tradeoff (defined in `lib/profiles.json` / `lib/profiles.js`):
+**Search profiles** — three presets that tune the speed vs. quality tradeoff (defined in `lib/profiles.json` / `lib/profiles.js`). Max candidates caps the post-filter scored pool (top-K), not which corpus indices are scanned:
 
 | Profile | Fuzzy cutoff | Score scale | Max candidates | When to use |
 |---------|-------------|-------------|----------------|-------------|

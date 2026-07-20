@@ -63,6 +63,29 @@ describe('rankSearchItems order snapshots', () => {
     expect(hits.every((h) => h.score > 0)).toBe(true);
     expect(hits[0].score).toBeGreaterThanOrEqual(hits[1].score);
   });
+
+  it('finds matches beyond maxCandidates index (not prefix truncation)', () => {
+    const filler = Array.from({ length: 5000 }, (_, i) =>
+      item(`filler-${i}`, {
+        title: `Filler ${i}`,
+        keys: ['filler'],
+        body: 'noise padding document',
+        cat: 'note',
+      })
+    );
+    const buried = item('buried-needle', {
+      title: 'Unique Needle Document',
+      keys: ['needleunique'],
+      body: 'Contains the rare token needleunique for ranking.',
+      cat: 'note',
+    });
+    const corpus = [...filler, buried];
+    expect(corpus.length).toBeGreaterThan(getProfileConfig('balanced').maxCandidates);
+
+    const hits = rankSearchItems(corpus, 'needleunique', { profile: 'balanced', limit: 5 });
+    expect(rankedIds(hits)).toContain('buried-needle');
+    expect(rankedIds(hits)[0]).toBe('buried-needle');
+  });
 });
 
 describe('scoreSearchItem', () => {
@@ -103,6 +126,30 @@ describe('scoreSearchItem', () => {
     const ranked = rankSearchItems([decoy, buried], 'phosphor crystals', { limit: 5, profile: 'legacy' });
     const hashes = ranked.map((r) => r.it.hash);
     expect(hashes).toContain('#buried-body');
+  });
+
+  it('rejects prefix false positives for required tokens (alpha vs alphabet)', () => {
+    const shortOnly = item('alpha-only', {
+      title: 'Short match',
+      keys: ['alpha'],
+      body: 'Mentions alpha but not the longer form.',
+      cat: 'note',
+    });
+    const full = item('alphabet-full', {
+      title: 'Full match',
+      keys: ['alphabet'],
+      body: 'Contains alphabet explicitly.',
+      cat: 'note',
+    });
+    const filters = parseSearchQuery('alphabet');
+    expect(filters.required).toContain('alphabet');
+
+    expect(scoreSearchItem(shortOnly, filters.tokens, filters, { profile: 'legacy' })).toBe(0);
+    expect(scoreSearchItem(full, filters.tokens, filters, { profile: 'legacy' })).toBeGreaterThan(0);
+
+    const ranked = rankSearchItems([shortOnly, full], 'alphabet', { limit: 5, profile: 'legacy' });
+    expect(rankedIds(ranked)).toEqual(['alphabet-full']);
+    expect(rankedIds(ranked)).not.toContain('alpha-only');
   });
 });
 
