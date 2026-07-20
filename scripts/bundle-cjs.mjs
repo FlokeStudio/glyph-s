@@ -1,8 +1,4 @@
 #!/usr/bin/env node
-/**
- * Emit CJS vendor bundles for Obsidian plugins (glyph-sO / glyph-miO).
- * Replaces manual `cp dist/... vendor/engine.js` — run `npm run vendor:sync`.
- */
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,8 +7,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lib = path.join(root, 'lib');
 const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
 
+function stripComments(src) {
+  return String(src || '')
+    .replace(/\/\*\*[\s\S]*?\*\//g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+}
+
 function toCjs(src, exportNames) {
-  let s = src.replace(/^export /gm, '');
+  let s = stripComments(src).replace(/^export /gm, '');
   s = s.replace(/import \{([^}]+)\} from '\.\/[^']+';?\n?/g, '');
   const exp = exportNames.map((n) => `  ${n}`).join(',\n');
   return `${s}\nmodule.exports = {\n${exp}\n};\n`;
@@ -46,17 +49,21 @@ const layoutCjs = toCjs(layout, [
 ]);
 const profilesCjs = toCjs(profiles, ['PROFILE_SETTINGS', 'getProfileConfig', 'PROFILE_IDS']);
 
-const engineCjs =
-  tokenizeCjs.replace(/module\.exports[\s\S]*$/, '') +
-  layoutCjs.replace(/module\.exports[\s\S]*$/, '') +
-  profilesCjs.replace(/module\.exports[\s\S]*$/, '') +
+const engineBody = stripComments(
   engineRaw
     .replace(/import \{[^}]+\} from '\.\/tokenize\.js';?\n?/g, '')
     .replace(/import \{[^}]+\} from '\.\/layout\.js';?\n?/g, '')
     .replace(/import \{[^}]+\} from '\.\/profiles\.js';?\n?/g, '')
     .replace(/^export \{[^}]+\} from '\.\/[^']+';?\n?/gm, '')
     .replace(/^export \{[^}]+\};?\s*$/gm, '')
-    .replace(/^export /gm, '') +
+    .replace(/^export /gm, '')
+);
+
+const engineCjs =
+  tokenizeCjs.replace(/module\.exports[\s\S]*$/, '') +
+  layoutCjs.replace(/module\.exports[\s\S]*$/, '') +
+  profilesCjs.replace(/module\.exports[\s\S]*$/, '') +
+  engineBody +
   '\nmodule.exports = {\n  tokenizeQuery,\n  parseSearchQuery,\n  expandTokenVariants,\n  expandQueryVariants,\n  getProfileConfig,\n  PROFILE_SETTINGS,\n  PROFILE_IDS,\n  matchesSearchFilters,\n  scoreSearchItem,\n  snippetForItem,\n  rankSearchItems,\n  buildIndex,\n  createSearchEngine\n};\n';
 
 const stampedAt = new Date().toISOString();

@@ -22,16 +22,16 @@ Prioritized engineering backlog after the 2.8.0 tooling pass. See also [DEVELOPM
 
 ### Week 2
 
-| Repo | Item |
-|------|------|
-| **glyph-sO** | Highlight match in open note after jump (`editor.setCursor` + scroll) |
-| **glyph-miO** | Right sidebar `ItemView` instead of Modal-only panel |
+| Repo | Item | Status |
+|------|------|--------|
+| **glyph-sO** | Highlight match in open note after jump (`editor.setCursor` + scroll) | **2.8.0** |
+| **glyph-miO** | Right sidebar `ItemView` instead of Modal-only panel | **2.8.0** |
 
 ### Week 3
 
-| Repo | Item |
-|------|------|
-| **glyph-mi** | Publish `@floke/glyph-mi` on npm |
+| Repo | Item | Status |
+|------|------|--------|
+| **glyph-mi** | Publish `@floke/glyph-mi` on npm | package prep **2.8.0**; registry publish next |
 
 ### Month 2
 
@@ -42,10 +42,10 @@ Prioritized engineering backlog after the 2.8.0 tooling pass. See also [DEVELOPM
 | **glyph-s** | Expand engine test matrix (query AST, fuzzy EN↔RU, edge cases) | **shipped 2.8.0** |
 | **glyph-s** | Optional local embeddings (ONNX all-MiniLM, offline) | stub **2.8.0**; ONNX next |
 | **glyph-mi** | Train + ship `.onnx` from `glyph-log.sqlite` (500+ examples) | |
-| **glyph-mi** | KNN in main process via IPC (not renderer at 10k tracks) | |
-| **glyph-miO** | YAML frontmatter tag mode | |
-| **glyph-miO** | Batch vault analysis (“148 notes without tags”) | |
-| **glyph-sO** | Folder grouping toggle, hover preview, default hotkey polish | |
+| **glyph-mi** | KNN in main process via IPC (not renderer at 10k tracks) | module **2.8.0**; Electron wire next |
+| **glyph-miO** | YAML frontmatter tag mode | **2.8.0** |
+| **glyph-miO** | Batch vault analysis (“148 notes without tags”) | **2.8.0** |
+| **glyph-sO** | Folder grouping toggle, hover preview, default hotkey polish | **2.8.0** |
 
 ## Engine (`glyph-s`)
 
@@ -72,4 +72,4 @@ TF-IDF / BM25-style ranking today. **2.8.0** ships `lib/embeddings.js` stub (`em
 
 ## One-line priority
 
-**Obsidian plugins need a persistent index and a sidebar panel first** — everything else is quality that compounds over time.
+**Obsidian UX shipped in 2.8** — next: ONNX embeddings, npm publish, Electron KNN wiring.
