@@ -2,7 +2,7 @@
   <img src="docs/assets/glyph-transparent.png" width="88" alt="Glyph" />
 </p>
 
-<h1 align="center">glyph-s 2.7.2</h1>
+<h1 align="center">glyph-s 2.8.0</h1>
 
 <p align="center">
   <strong>Glyph Core Search Engine</strong><br>
@@ -34,6 +34,33 @@ If you use [**glyph-sO**](https://github.com/FlokeStudio/glyph-sO) in Obsidian, 
 | **Obsidian users** | Install [glyph-sO](https://github.com/FlokeStudio/glyph-sO) — no need to touch this repo |
 | **Floke / web developers** | Pre-built browser bundle (`glyph-search-2.7.js`) |
 | **Plugin / app developers** | ESM or CJS import with full API control |
+
+### What's new in 2.8.0
+
+**Tooling & quality**
+
+- `tsconfig.json` with `allowJs` + `checkJs` for IDE type checking
+- ESLint flat config (`npm run lint`)
+- Expanded test matrix: query AST, fuzzy EN↔RU layout, engine helpers
+- Benchmark script (`npm run benchmark`) — see numbers below
+
+**Embeddings stub**
+
+- `lib/embeddings.js` — optional semantic search hook (`embedTexts` returns `null` when disabled; `embeddingBoost()` returns `0`)
+
+**Benchmark (2.8.0)**
+
+Run locally:
+
+```bash
+npm run benchmark
+```
+
+| Items | Time (ms) |
+|-------|-----------|
+| 1 000 | run `npm run benchmark` |
+| 5 000 | run `npm run benchmark` |
+| 10 000 | run `npm run benchmark` |
 
 ### What’s new in 2.7.2
 
@@ -120,7 +147,9 @@ Both can be disabled per-query via `settings` in `rankSearchItems()`.
 git clone https://github.com/FlokeStudio/glyph-s.git
 cd glyph-s
 npm install
-npm test                 # vitest — ranking / fuzzy / profile snapshots
+npm test                 # vitest — ranking, tokenize, layout, engine
+npm run lint             # eslint lib test scripts
+npm run benchmark        # 1k / 5k / 10k synthetic corpus timing
 npm run build            # Obsidian vendor sync + Floke bundle
 # or separately:
 npm run vendor:sync      # preferred — writes sibling plugin vendors + VERSION.json
@@ -191,9 +220,9 @@ const index = buildIndex(items, { profile: 'balanced' });
 // index.items[].bag — pre-tokenized text for fast-path filtering
 ```
 
-#### Types (JSDoc)
+#### Types (checkJs)
 
-Public shapes (`SearchItem`, `SearchEngine`, `ParsedSearchQuery`, …) live in `lib/types.js`. Enable editor checking with the repo `jsconfig.json` (`checkJs: true`).
+Enable editor checking with the repo `tsconfig.json` (`allowJs`, `checkJs: true`).
 
 ### Project structure
 
@@ -202,15 +231,20 @@ lib/
   engine.js       # rankSearchItems, createSearchEngine, buildIndex
   profiles.js     # PROFILE_SETTINGS + getProfileConfig
   profiles.json   # same profile data (vendor stamp copy)
-  types.js        # JSDoc typedefs for the public API
+  types.js        # checkJs placeholder (public shapes documented in README)
   tokenize.js     # tokenizeQuery, parseSearchQuery
   layout.js       # fuzzy layout / transliteration
+  embeddings.js   # optional semantic search stub (disabled by default)
   index.js        # public ESM exports
 test/
-  ranking.test.js # vitest order snapshots
+  ranking.test.js     # vitest order snapshots
+  tokenize.test.js    # query AST / filters
+  layout.test.js      # EN↔RU keyboard variants
+  engine-extra.test.js # buildIndex, engine, snippets
 scripts/
   bundle-cjs.mjs  # vendor:sync → Obsidian CJS + VERSION.json
   bundle-floke.mjs
+  benchmark.mjs   # 1k / 5k / 10k timing
 docs/
   DEVELOPMENT.md  # tests, vendor sync, diagnostics, roadmap
   index.html
@@ -229,6 +263,7 @@ docs/
 | `getProfileConfig` / `PROFILE_SETTINGS` | profiles.js | Search profile presets |
 | `expandTokenVariants` | layout.js | Layout + transliteration variants |
 | `expandQueryVariants` | layout.js | Full query expansion |
+| `embedTexts` / `embeddingBoost` | embeddings.js | Semantic search stub (disabled) |
 | `matchesSearchFilters` | engine.js | Filter predicate |
 | `scoreSearchItem` | engine.js | Single-item scorer |
 

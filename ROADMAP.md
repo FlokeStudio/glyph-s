@@ -1,13 +1,15 @@
 # Glyph Search — technical roadmap
 
-Prioritized engineering backlog after the 2.7.2 correctness pass. See also [DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Prioritized engineering backlog after the 2.8.0 tooling pass. See also [DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Current strengths
 
 - Shared engine for Cultiva, Obsidian (sO), Floke web, and future products
 - CJS vendor bundle + `npm run vendor:sync` with `VERSION.json` stamp
 - Search profiles: `legacy` / `balanced` / `max-quality`
-- Vitest ranking snapshots (14 tests) including body-only full-text regression
+- Vitest ranking snapshots + expanded query / layout / engine tests
+- `tsconfig.json`, ESLint flat config, benchmark script (`npm run benchmark`)
+- Embeddings stub (`lib/embeddings.js`) — semantic search hook, disabled by default
 
 ## Priority backlog
 
@@ -30,44 +32,43 @@ Prioritized engineering backlog after the 2.7.2 correctness pass. See also [DEVE
 | Repo | Item |
 |------|------|
 | **glyph-mi** | Publish `@floke/glyph-mi` on npm |
-| **glyph-s** | Expand engine test matrix (query AST, fuzzy EN↔RU, edge cases) |
 
 ### Month 2
 
-| Repo | Item |
-|------|------|
-| **glyph-s** | TypeScript (`tsconfig.json`, typed public API) |
-| **glyph-s** | Benchmark suite (1k / 5k / 10k items, document in README) |
-| **glyph-s** | Optional local embeddings (ONNX all-MiniLM, offline) |
-| **glyph-mi** | Train + ship `.onnx` from `glyph-log.sqlite` (500+ examples) |
-| **glyph-mi** | KNN in main process via IPC (not renderer at 10k tracks) |
-| **glyph-miO** | YAML frontmatter tag mode |
-| **glyph-miO** | Batch vault analysis (“148 notes without tags”) |
-| **glyph-sO** | Folder grouping toggle, hover preview, default hotkey polish |
+| Repo | Item | Status |
+|------|------|--------|
+| **glyph-s** | TypeScript (`tsconfig.json`, typed public API) | **shipped 2.8.0** (checkJs) |
+| **glyph-s** | Benchmark suite (1k / 5k / 10k items, document in README) | **shipped 2.8.0** |
+| **glyph-s** | Expand engine test matrix (query AST, fuzzy EN↔RU, edge cases) | **shipped 2.8.0** |
+| **glyph-s** | Optional local embeddings (ONNX all-MiniLM, offline) | stub **2.8.0**; ONNX next |
+| **glyph-mi** | Train + ship `.onnx` from `glyph-log.sqlite` (500+ examples) | |
+| **glyph-mi** | KNN in main process via IPC (not renderer at 10k tracks) | |
+| **glyph-miO** | YAML frontmatter tag mode | |
+| **glyph-miO** | Batch vault analysis (“148 notes without tags”) | |
+| **glyph-sO** | Folder grouping toggle, hover preview, default hotkey polish | |
 
 ## Engine (`glyph-s`)
 
 ### TypeScript
 
-Add `tsconfig.json` and public types for `rankSearchItems`, `snippetForItem`, `createSearchEngine` — IDE autocomplete and compile-time checks without breaking the CJS bundle.
+`tsconfig.json` with `allowJs` + `checkJs` shipped in **2.8.0**. Next: `.d.ts` public types or migrate core modules to `.ts` without breaking the CJS bundle.
 
 ### Tests (expand)
 
-Already covered: profile order, body-only fast-path, layout fuzzy.
-
-Add:
+**Shipped 2.8.0:**
 
 - `parseSearchQuery('path:projects tag:daily')` → structured filters
 - Fuzzy EN↔RU (`ghbdtn` → `привет`)
-- Edge cases: empty query, stop-words-only
+- Edge cases: empty query, phrases, exclusions, OR groups
+- `buildIndex`, `createSearchEngine.search`, `snippetForItem`
 
 ### Benchmark
 
-Script with `performance.now()` or Benchmark.js on 1000 / 5000 / 10000 items; publish numbers in README.
+**Shipped 2.8.0** — `scripts/benchmark.mjs` with `performance.now()` on 1k / 5k / 10k items. Run `npm run benchmark` and paste numbers into README when publishing.
 
 ### Semantic similarity (optional)
 
-TF-IDF / BM25-style ranking today. Next level: optional ONNX embeddings (all-MiniLM ~23MB, no Ollama).
+TF-IDF / BM25-style ranking today. **2.8.0** ships `lib/embeddings.js` stub (`embedTexts` → `null`, `embeddingBoost` → `0`). Next: optional ONNX embeddings (all-MiniLM ~23MB, no Ollama).
 
 ## One-line priority
 
