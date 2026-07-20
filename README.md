@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://flokestudio.github.io/glyph-s/">Site</a> ·
+  <a href="ROADMAP.md">Roadmap</a> ·
   <a href="https://github.com/FlokeStudio/glyph-sO">glyph-sO</a> ·
   <a href="https://github.com/FlokeStudio/glyph-miO">glyph-miO</a> ·
   <a href="https://github.com/krwg/glyph-mi">glyph-mi</a>
