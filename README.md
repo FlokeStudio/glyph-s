@@ -46,8 +46,12 @@ If you use [**glyph-sO**](https://github.com/FlokeStudio/glyph-sO) in Obsidian, 
 
 **Embeddings hook**
 
-- `lib/embeddings.js` — optional semantic boost (`semanticEmbeddings: true` uses hash vectors; ONNX when `onnxruntime-node` + model path are configured)
+- `lib/embeddings.js` — optional semantic boost
+  - `semanticEmbeddings: true` → hash vectors (sync `rankSearchItems`, or async with no model)
+  - `embeddingModelPath` + optional peer `onnxruntime-node` → real embeddings via `rankSearchItemsAsync` / `engine.search()` (hash fallback if ONNX is missing)
+  - `buildIndex()` caches per-item vectors; `warmIndexEmbeddings()` / `engine.warmEmbeddings()` can replace them with ONNX vectors
 - Public types in `lib/glyph-s.d.ts`
+- Optional peer dependency: `onnxruntime-node` (not required to install)
 
 **Benchmark (2.8.0)**
 
@@ -235,7 +239,7 @@ lib/
   types.js        # checkJs placeholder (public shapes documented in README)
   tokenize.js     # tokenizeQuery, parseSearchQuery
   layout.js       # fuzzy layout / transliteration
-  embeddings.js   # optional semantic search stub (disabled by default)
+  embeddings.js   # optional semantic boost (hash + ONNX via onnxruntime-node peer)
   index.js        # public ESM exports
 test/
   ranking.test.js     # vitest order snapshots
@@ -264,7 +268,7 @@ docs/
 | `getProfileConfig` / `PROFILE_SETTINGS` | profiles.js | Search profile presets |
 | `expandTokenVariants` | layout.js | Layout + transliteration variants |
 | `expandQueryVariants` | layout.js | Full query expansion |
-| `embedTexts` / `embeddingBoost` | embeddings.js | Semantic search stub (disabled) |
+| `embedTexts` / `embeddingBoost` / `rankSearchItemsAsync` | embeddings.js / engine.js | Semantic boost (hash default; ONNX when configured) |
 | `matchesSearchFilters` | engine.js | Filter predicate |
 | `scoreSearchItem` | engine.js | Single-item scorer |
 

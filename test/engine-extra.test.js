@@ -4,6 +4,8 @@ import {
   createSearchEngine,
   snippetForItem,
   rankSearchItems,
+  rankSearchItemsAsync,
+  warmIndexEmbeddings,
 } from '../lib/engine.js';
 import { embedTexts, embeddingBoost } from '../lib/embeddings.js';
 import { CORPUS, item, rankedIds } from './helpers.js';
@@ -60,12 +62,105 @@ describe('empty query ranking', () => {
   });
 });
 
-describe('embeddings stub', () => {
-  it('returns null from embedTexts', async () => {
+describe('embeddings', () => {
+  it('returns null from embedTexts when disabled', async () => {
     expect(await embedTexts(['hello'], {})).toBeNull();
   });
 
-  it('returns zero boost', () => {
+  it('returns hash vectors when enabled without a model', async () => {
+    const vectors = await embedTexts(['hello'], { semanticEmbeddings: true });
+    expect(vectors).toHaveLength(1);
+    expect(vectors[0]).toBeInstanceOf(Float32Array);
+    expect(vectors[0].length).toBe(64);
+  });
+
+  it('returns zero boost for missing vectors', () => {
     expect(embeddingBoost()).toBe(0);
+  });
+
+  it('falls back to hash when onnxruntime-node is unavailable', async () => {
+    const vectors = await embedTexts(['fallback'], {
+      semanticEmbeddings: true,
+      embeddingModelPath: '/nonexistent/model.onnx',
+    });
+    expect(vectors).toHaveLength(1);
+    expect(vectors[0]).toBeInstanceOf(Float32Array);
+  });
+
+  it('ONNX/custom embedder ranking differs from hash-only', async () => {
+    const corpus = [
+      item('hash-friend', {
+        title: 'Shared Notes',
+        keys: ['notes', 'alpha'],
+        body: 'notes alpha cooking pasta recipes and broth',
+        cat: 'note',
+      }),
+      item('onnx-friend', {
+        title: 'Shared Notes',
+        keys: ['notes', 'alpha'],
+        body: 'notes alpha soft kitten feline companions',
+        cat: 'note',
+      }),
+    ];
+
+    const hashHits = await rankSearchItemsAsync(corpus, 'notes alpha', {
+      limit: 2,
+      profile: 'legacy',
+      settings: { semanticEmbeddings: true },
+    });
+
+    const mockEmbedder = (texts) =>
+      texts.map((text) => {
+        const v = new Float32Array(64);
+        const low = String(text).toLowerCase();
+        // Align the short query with the kitten document; push cooking away.
+        if (low.includes('kitten') || low.includes('feline')) v[0] = 1;
+        else if (!low.includes('cooking') && !low.includes('pasta')) v[0] = 1;
+        else v[1] = 1;
+        return v;
+      });
+
+    const onnxHits = await rankSearchItemsAsync(corpus, 'notes alpha', {
+      limit: 2,
+      profile: 'legacy',
+      settings: {
+        semanticEmbeddings: true,
+        embeddingModelPath: '/fake/model.onnx',
+      },
+      embedder: mockEmbedder,
+    });
+
+    expect(hashHits.length).toBeGreaterThan(0);
+    expect(onnxHits.length).toBeGreaterThan(0);
+    expect(rankedIds(onnxHits)[0]).toBe('onnx-friend');
+    // Hash path does not use the kitten-aligned embedder, so order/scores diverge.
+    expect(rankedIds(onnxHits)).not.toEqual(rankedIds(hashHits));
+    expect(onnxHits[0].score).not.toBe(hashHits.find((h) => h.it.hash === '#onnx-friend')?.score);
+  });
+
+  it('buildIndex caches hash embeddings for sync semantic boost', () => {
+    const index = buildIndex(
+      [item('cached', { title: 'Cached', body: 'vector bag text', keys: ['cached'] })],
+      { profile: 'legacy' }
+    );
+    expect(index.items[0].embedding).toBeInstanceOf(Float32Array);
+    expect(index.items[0].embeddingSource).toBe('hash');
+  });
+
+  it('warmIndexEmbeddings marks onnx-sourced vectors via custom embedder', async () => {
+    const index = buildIndex(
+      [item('warm', { title: 'Warm', body: 'kitten', keys: ['warm'] })],
+      { profile: 'legacy' }
+    );
+    await warmIndexEmbeddings(index, {
+      embeddingModelPath: '/fake/model.onnx',
+      embedder: (texts) => texts.map(() => {
+        const v = new Float32Array(64);
+        v[0] = 1;
+        return v;
+      }),
+    });
+    expect(index.items[0].embeddingSource).toBe('onnx');
+    expect(index.items[0].embedding[0]).toBe(1);
   });
 });
