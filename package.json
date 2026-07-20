@@ -15,6 +15,14 @@
   },
   "license": "GPL-3.0-or-later",
   "types": "./lib/glyph-s.d.ts",
+  "peerDependencies": {
+    "onnxruntime-node": ">=1.17.0"
+  },
+  "peerDependenciesMeta": {
+    "onnxruntime-node": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
     "eslint": "^9.31.0",
