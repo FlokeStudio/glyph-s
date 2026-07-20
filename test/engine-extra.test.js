@@ -163,4 +163,13 @@ describe('embeddings', () => {
     expect(index.items[0].embeddingSource).toBe('onnx');
     expect(index.items[0].embedding[0]).toBe(1);
   });
+
+  it('warmIndexEmbeddings keeps hash source when ONNX falls back', async () => {
+    const index = buildIndex(
+      [item('fallback', { title: 'Fallback', body: 'plain text', keys: ['fallback'] })],
+      { profile: 'legacy' }
+    );
+    await warmIndexEmbeddings(index, { embeddingModelPath: '/nonexistent/model.onnx' });
+    expect(index.items[0].embeddingSource).toBe('hash');
+  });
 });
