@@ -4,6 +4,8 @@ import {
   createSearchEngine,
   snippetForItem,
   rankSearchItems,
+  rankSearchItemsAsync,
+  warmIndexEmbeddings,
 } from '../lib/engine.js';
 import { embedTexts, embeddingBoost } from '../lib/embeddings.js';
 import { CORPUS, item, rankedIds } from './helpers.js';
@@ -60,12 +62,183 @@ describe('empty query ranking', () => {
   });
 });
 
-describe('embeddings stub', () => {
-  it('returns null from embedTexts', async () => {
+describe('embeddings', () => {
+  it('returns null from embedTexts when disabled', async () => {
     expect(await embedTexts(['hello'], {})).toBeNull();
   });
 
-  it('returns zero boost', () => {
+  it('returns hash vectors when enabled without a model', async () => {
+    const vectors = await embedTexts(['hello'], { semanticEmbeddings: true });
+    expect(vectors).toHaveLength(1);
+    expect(vectors[0]).toBeInstanceOf(Float32Array);
+    expect(vectors[0].length).toBe(64);
+  });
+
+  it('returns zero boost for missing vectors', () => {
     expect(embeddingBoost()).toBe(0);
+  });
+
+  it('falls back to hash when onnxruntime-node is unavailable', async () => {
+    const vectors = await embedTexts(['fallback'], {
+      semanticEmbeddings: true,
+      embeddingModelPath: '/nonexistent/model.onnx',
+    });
+    expect(vectors).toHaveLength(1);
+    expect(vectors[0]).toBeInstanceOf(Float32Array);
+  });
+
+  it('ONNX/custom embedder ranking differs from hash-only', async () => {
+    const corpus = [
+      item('hash-friend', {
+        title: 'Shared Notes',
+        keys: ['notes', 'alpha'],
+        body: 'notes alpha cooking pasta recipes and broth',
+        cat: 'note',
+      }),
+      item('onnx-friend', {
+        title: 'Shared Notes',
+        keys: ['notes', 'alpha'],
+        body: 'notes alpha soft kitten feline companions',
+        cat: 'note',
+      }),
+    ];
+
+    const hashHits = await rankSearchItemsAsync(corpus, 'notes alpha', {
+      limit: 2,
+      profile: 'legacy',
+      settings: { semanticEmbeddings: true },
+    });
+
+    const mockEmbedder = (texts) =>
+      texts.map((text) => {
+        const v = new Float32Array(64);
+        const low = String(text).toLowerCase();
+        // Align the short query with the kitten document; push cooking away.
+        if (low.includes('kitten') || low.includes('feline')) v[0] = 1;
+        else if (!low.includes('cooking') && !low.includes('pasta')) v[0] = 1;
+        else v[1] = 1;
+        return v;
+      });
+
+    const onnxHits = await rankSearchItemsAsync(corpus, 'notes alpha', {
+      limit: 2,
+      profile: 'legacy',
+      settings: {
+        semanticEmbeddings: true,
+        embeddingModelPath: '/fake/model.onnx',
+      },
+      embedder: mockEmbedder,
+    });
+
+    expect(hashHits.length).toBeGreaterThan(0);
+    expect(onnxHits.length).toBeGreaterThan(0);
+    expect(rankedIds(onnxHits)[0]).toBe('onnx-friend');
+    // Hash path does not use the kitten-aligned embedder, so order/scores diverge.
+    expect(rankedIds(onnxHits)).not.toEqual(rankedIds(hashHits));
+    expect(onnxHits[0].score).not.toBe(hashHits.find((h) => h.it.hash === '#onnx-friend')?.score);
+  });
+
+  it('buildIndex caches hash embeddings for sync semantic boost', () => {
+    const index = buildIndex(
+      [item('cached', { title: 'Cached', body: 'vector bag text', keys: ['cached'] })],
+      { profile: 'legacy' }
+    );
+    expect(index.items[0].embedding).toBeInstanceOf(Float32Array);
+    expect(index.items[0].embeddingSource).toBe('hash');
+  });
+
+  it('warmIndexEmbeddings marks onnx-sourced vectors via custom embedder', async () => {
+    const index = buildIndex(
+      [item('warm', { title: 'Warm', body: 'kitten', keys: ['warm'] })],
+      { profile: 'legacy' }
+    );
+    await warmIndexEmbeddings(index, {
+      embeddingModelPath: '/fake/model.onnx',
+      embedder: (texts) => texts.map(() => {
+        const v = new Float32Array(64);
+        v[0] = 1;
+        return v;
+      }),
+    });
+    expect(index.items[0].embeddingSource).toBe('onnx');
+    expect(index.items[0].embedding[0]).toBe(1);
+  });
+
+  it('warmIndexEmbeddings keeps hash source when ONNX falls back', async () => {
+    const index = buildIndex(
+      [item('fallback', { title: 'Fallback', body: 'plain text', keys: ['fallback'] })],
+      { profile: 'legacy' }
+    );
+    await warmIndexEmbeddings(index, { embeddingModelPath: '/nonexistent/model.onnx' });
+    expect(index.items[0].embeddingSource).toBe('hash');
+  });
+
+  it('falls back to hash boost when item embed space diverges from query', async () => {
+    const corpus = [
+      item('a', {
+        title: 'Shared Notes',
+        keys: ['notes'],
+        body: 'notes cooking pasta recipes',
+        cat: 'note',
+      }),
+      item('b', {
+        title: 'Shared Notes',
+        keys: ['notes'],
+        body: 'notes soft kitten feline',
+        cat: 'note',
+      }),
+    ];
+
+    // Query (len=1) gets a custom "onnx" vector; item batches refuse custom → hash fallback.
+    const divergingEmbedder = (texts) => {
+      if (texts.length !== 1) return null;
+      const v = new Float32Array(64);
+      v[0] = 1;
+      return [v];
+    };
+
+    const hashHits = await rankSearchItemsAsync(corpus, 'notes', {
+      limit: 2,
+      profile: 'legacy',
+      settings: { semanticEmbeddings: true },
+    });
+
+    const mixedHits = await rankSearchItemsAsync(corpus, 'notes', {
+      limit: 2,
+      profile: 'legacy',
+      settings: {
+        semanticEmbeddings: true,
+        embeddingModelPath: '/fake/model.onnx',
+      },
+      embedder: divergingEmbedder,
+    });
+
+    // Must not apply onnx query vs hash items — scores should match pure hash ranking.
+    expect(rankedIds(mixedHits)).toEqual(rankedIds(hashHits));
+    expect(mixedHits.map((h) => h.score)).toEqual(hashHits.map((h) => h.score));
+  });
+
+  it('finds matches beyond maxCandidates index (not prefix truncation)', async () => {
+    const { getProfileConfig } = await import('../lib/profiles.js');
+    const filler = Array.from({ length: 5000 }, (_, i) =>
+      item(`filler-${i}`, {
+        title: `Filler ${i}`,
+        keys: ['filler'],
+        body: 'noise padding document',
+        cat: 'note',
+      })
+    );
+    const buried = item('buried-needle', {
+      title: 'Unique Needle Document',
+      keys: ['needleunique'],
+      body: 'Contains the rare token needleunique for ranking.',
+      cat: 'note',
+    });
+    const corpus = [...filler, buried];
+    expect(corpus.length).toBeGreaterThan(getProfileConfig('balanced').maxCandidates);
+
+    const hits = rankSearchItems(corpus, 'needleunique', { profile: 'balanced', limit: 5 });
+    expect(rankedIds(hits)).toContain('buried-needle');
+    expect(rankedIds(hits)[0]).toBe('buried-needle');
   });
 });
