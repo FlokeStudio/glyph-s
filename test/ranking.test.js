@@ -127,6 +127,30 @@ describe('scoreSearchItem', () => {
     const hashes = ranked.map((r) => r.it.hash);
     expect(hashes).toContain('#buried-body');
   });
+
+  it('rejects prefix false positives for required tokens (alpha vs alphabet)', () => {
+    const shortOnly = item('alpha-only', {
+      title: 'Short match',
+      keys: ['alpha'],
+      body: 'Mentions alpha but not the longer form.',
+      cat: 'note',
+    });
+    const full = item('alphabet-full', {
+      title: 'Full match',
+      keys: ['alphabet'],
+      body: 'Contains alphabet explicitly.',
+      cat: 'note',
+    });
+    const filters = parseSearchQuery('alphabet');
+    expect(filters.required).toContain('alphabet');
+
+    expect(scoreSearchItem(shortOnly, filters.tokens, filters, { profile: 'legacy' })).toBe(0);
+    expect(scoreSearchItem(full, filters.tokens, filters, { profile: 'legacy' })).toBeGreaterThan(0);
+
+    const ranked = rankSearchItems([shortOnly, full], 'alphabet', { limit: 5, profile: 'legacy' });
+    expect(rankedIds(ranked)).toEqual(['alphabet-full']);
+    expect(rankedIds(ranked)).not.toContain('alpha-only');
+  });
 });
 
 describe('fuzzy layout', () => {
