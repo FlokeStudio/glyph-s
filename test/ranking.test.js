@@ -63,6 +63,29 @@ describe('rankSearchItems order snapshots', () => {
     expect(hits.every((h) => h.score > 0)).toBe(true);
     expect(hits[0].score).toBeGreaterThanOrEqual(hits[1].score);
   });
+
+  it('finds matches beyond maxCandidates index (not prefix truncation)', () => {
+    const filler = Array.from({ length: 5000 }, (_, i) =>
+      item(`filler-${i}`, {
+        title: `Filler ${i}`,
+        keys: ['filler'],
+        body: 'noise padding document',
+        cat: 'note',
+      })
+    );
+    const buried = item('buried-needle', {
+      title: 'Unique Needle Document',
+      keys: ['needleunique'],
+      body: 'Contains the rare token needleunique for ranking.',
+      cat: 'note',
+    });
+    const corpus = [...filler, buried];
+    expect(corpus.length).toBeGreaterThan(getProfileConfig('balanced').maxCandidates);
+
+    const hits = rankSearchItems(corpus, 'needleunique', { profile: 'balanced', limit: 5 });
+    expect(rankedIds(hits)).toContain('buried-needle');
+    expect(rankedIds(hits)[0]).toBe('buried-needle');
+  });
 });
 
 describe('scoreSearchItem', () => {
