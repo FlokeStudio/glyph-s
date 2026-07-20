@@ -172,4 +172,73 @@ describe('embeddings', () => {
     await warmIndexEmbeddings(index, { embeddingModelPath: '/nonexistent/model.onnx' });
     expect(index.items[0].embeddingSource).toBe('hash');
   });
+
+  it('falls back to hash boost when item embed space diverges from query', async () => {
+    const corpus = [
+      item('a', {
+        title: 'Shared Notes',
+        keys: ['notes'],
+        body: 'notes cooking pasta recipes',
+        cat: 'note',
+      }),
+      item('b', {
+        title: 'Shared Notes',
+        keys: ['notes'],
+        body: 'notes soft kitten feline',
+        cat: 'note',
+      }),
+    ];
+
+    // Query (len=1) gets a custom "onnx" vector; item batches refuse custom → hash fallback.
+    const divergingEmbedder = (texts) => {
+      if (texts.length !== 1) return null;
+      const v = new Float32Array(64);
+      v[0] = 1;
+      return [v];
+    };
+
+    const hashHits = await rankSearchItemsAsync(corpus, 'notes', {
+      limit: 2,
+      profile: 'legacy',
+      settings: { semanticEmbeddings: true },
+    });
+
+    const mixedHits = await rankSearchItemsAsync(corpus, 'notes', {
+      limit: 2,
+      profile: 'legacy',
+      settings: {
+        semanticEmbeddings: true,
+        embeddingModelPath: '/fake/model.onnx',
+      },
+      embedder: divergingEmbedder,
+    });
+
+    // Must not apply onnx query vs hash items — scores should match pure hash ranking.
+    expect(rankedIds(mixedHits)).toEqual(rankedIds(hashHits));
+    expect(mixedHits.map((h) => h.score)).toEqual(hashHits.map((h) => h.score));
+  });
+
+  it('finds matches beyond maxCandidates index (not prefix truncation)', async () => {
+    const { getProfileConfig } = await import('../lib/profiles.js');
+    const filler = Array.from({ length: 5000 }, (_, i) =>
+      item(`filler-${i}`, {
+        title: `Filler ${i}`,
+        keys: ['filler'],
+        body: 'noise padding document',
+        cat: 'note',
+      })
+    );
+    const buried = item('buried-needle', {
+      title: 'Unique Needle Document',
+      keys: ['needleunique'],
+      body: 'Contains the rare token needleunique for ranking.',
+      cat: 'note',
+    });
+    const corpus = [...filler, buried];
+    expect(corpus.length).toBeGreaterThan(getProfileConfig('balanced').maxCandidates);
+
+    const hits = rankSearchItems(corpus, 'needleunique', { profile: 'balanced', limit: 5 });
+    expect(rankedIds(hits)).toContain('buried-needle');
+    expect(rankedIds(hits)[0]).toBe('buried-needle');
+  });
 });
